@@ -23,7 +23,7 @@ const diceVariants = {
 const containerVariants = {
   rolling: {
     transition: {
-      staggerChildren: 0.15, // Each die starts 0.15s after the previous
+      staggerChildren: 0.15, 
     },
   },
   initial: {},
