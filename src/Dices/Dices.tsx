@@ -15,6 +15,20 @@ interface DicesProps {
 
 const maxRerolls = 3;
 
+const diceVariants = {
+  initial: { rotate: 0 },
+  rolling: { rotate: 360 },
+};
+
+const containerVariants = {
+  rolling: {
+    transition: {
+      staggerChildren: 0.15, // Each die starts 0.15s after the previous
+    },
+  },
+  initial: {},
+};
+
 const Dices: React.FC<DicesProps> = ({
   dice,
   held,
@@ -24,29 +38,31 @@ const Dices: React.FC<DicesProps> = ({
   toggleHold,
   resetGame,
 }) => {
-  // Only allow holding dice after the first roll
   const canHold = rerollsLeft < maxRerolls;
   const letterDice = ['D', 'I', 'C', 'E', 'D'];
 
   return (
     <Box className="Dices" sx={{ textAlign: 'center', mt: 4 }}>
-      <Box
+      <motion.div
         className="dice-container"
-        sx={{ display: 'flex', gap: 2, justifyContent: 'center', mb: 3 }}
+        variants={containerVariants}
+        animate={rolling ? 'rolling' : 'initial'}
+        style={{ display: 'flex', gap: 16, justifyContent: 'center', marginBottom: 24 }}
       >
         {dice.map((face, idx) => (
           <motion.div
             key={idx}
             className="dice"
-            animate={rolling && !held[idx] ? { rotate: 360 } : { rotate: 0 }}
-            transition={{ duration: 0.6 }}
+            variants={diceVariants}
+            animate={rolling && !held[idx] ? 'rolling' : 'initial'}
+            transition={{ duration: 0.6, ease: 'easeInOut' }}
             onClick={() => {
               if (!rolling && canHold) toggleHold(idx);
             }}
             style={{
               width: 60,
               height: 60,
-              background: held[idx] ? '#c8e6c9' : '#fff', 
+              background: held[idx] ? '#c8e6c9' : '#fff',
               border: held[idx] ? '3px solid #388e3c' : '2px solid #333',
               borderRadius: 8,
               display: 'flex',
@@ -70,7 +86,7 @@ const Dices: React.FC<DicesProps> = ({
             {rerollsLeft === maxRerolls ? letterDice[idx] : face}
           </motion.div>
         ))}
-      </Box>
+      </motion.div>
       <Button
         variant="contained"
         color="primary"
@@ -91,7 +107,7 @@ const Dices: React.FC<DicesProps> = ({
         color="secondary"
         onClick={resetGame}
         disabled={rolling}
-      > 
+      >
         Reset
       </Button>
       <Box sx={{ mt: 3, fontSize: 24 }}>
