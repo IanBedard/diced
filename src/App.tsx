@@ -79,12 +79,38 @@ function App() {
     goals => Object.values(goals).reduce((a, b) => a + b, 0)
   );
 
-  // --- Selection screen ---
+  // --- Instruction screen ---
   if (!playerCount) {
     return (
-      <Box sx={{ p: 4, textAlign: 'center' }}>
+      <Box sx={{ p: 4, maxWidth: 600, margin: '0 auto', textAlign: 'center' }}>
+        <h2>How to Play Diced</h2>
+        <Box sx={{ textAlign: 'left', mb: 3, fontSize: 18 }}>
+          <ul>
+            <li>
+              <strong>Roll Dice:</strong> On your turn, click <b>Roll</b> to roll all five dice.
+            </li>
+            <li>
+              <strong>Keep Dice:</strong> Click on any die to <b>hold</b> it (keep its value) for your next roll. Click again to release.
+            </li>
+            <li>
+              <strong>Rerolls:</strong> You can roll up to <b>3 times</b> per turn. After each roll, choose which dice to keep and which to reroll.
+            </li>
+            <li>
+              <strong>Scoring:</strong> After your rolls, select a scoring category (goal) and approve your score. Each category can only be used once per player.
+            </li>
+            <li>
+              <strong>Points:</strong> Your score for each category depends on your dice and the rules for that category (e.g., sum of all Fives, Full House, etc.).
+            </li>
+            <li>
+              <strong>Turn Order:</strong> Players take turns. The game ends when all categories are filled.
+            </li>
+            <li>
+              <strong>Winner:</strong> The player with the highest total score wins!
+            </li>
+          </ul>
+        </Box>
         <h2>Select Number of Players</h2>
-        {[2, 3, 4].map(num => (
+        {[2, 3, 4].map(num => ( 
           <Button
             key={num}
             variant="contained"
