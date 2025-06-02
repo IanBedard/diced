@@ -6,7 +6,6 @@ import RadioGroup from '@mui/material/RadioGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Radio from '@mui/material/Radio';
 import Typography from '@mui/material/Typography';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 const goals = [
   'Ones', 'Twos', 'Threes', 'Fours', 'Fives', 'Sixes',
