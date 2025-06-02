@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import Dices from './Dices/Dices';
 import Goals from './Goals/Goals';
+import Lobby from './Lobby';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import './App.css';
+import { useSocketGame } from './useSocketGame';
 
 const initialDice = [1, 1, 1, 1, 1];
 const initialHeld = [false, false, false, false, false];
@@ -12,26 +14,38 @@ const playerColors = ['red', 'blue', 'green', 'gold'];
 const playerNames = ['Red', 'Blue', 'Green', 'Yellow'];
 
 function App() {
-  const [playerCount, setPlayerCount] = useState<number | null>(null);
+  // All hooks at the top!
+  const { lobbyId, players, gameState, sendAction } = useSocketGame();
+  const [gameStarted, setGameStarted] = useState(false);
   const [currentPlayer, setCurrentPlayer] = useState(0);
   const [dice, setDice] = useState(initialDice);
   const [held, setHeld] = useState(initialHeld);
-  const [rolling, setRolling] = useState(false);
+  const [rolling, setRolling] = useState(false); 
   const [rerollsLeft, setRerollsLeft] = useState(maxRerolls);
-  const [usedGoals, setUsedGoals] = useState<Array<{ [goal: string]: number }>>([]);
+  const [usedGoals, setUsedGoals] = useState<Array<{ [goal: string]: number }>>(players.map(() => ({})));
   const [canApprove, setCanApprove] = useState(false);
 
-  // Initialize usedGoals for each player after selection
+  // Always call hooks before any return!
   React.useEffect(() => {
-    if (playerCount) {
-      setUsedGoals(Array(playerCount).fill(null).map(() => ({})));
+    if (players.length) {
+      setUsedGoals(Array(players.length).fill(null).map(() => ({})));
       setCurrentPlayer(0);
       setDice(initialDice);
       setHeld(initialHeld);
       setRerollsLeft(maxRerolls);
       setCanApprove(false);
     }
-  }, [playerCount]);
+  }, [players]);
+
+  const handleStart = (lobbyId: string, players: string[]) => {
+    setGameStarted(true);
+    // Optionally: sendAction({ type: 'startGame' });
+  };
+
+  // Now you can return conditionally
+  if (!gameStarted) {
+    return <Lobby onStart={handleStart} />;
+  }
 
   const getRandomFace = () => Math.floor(Math.random() * 6) + 1; 
 
@@ -65,7 +79,7 @@ function App() {
       return updated;
     });
     // Next player's turn
-    setCurrentPlayer((prev) => (prev + 1) % (playerCount || 1));
+    setCurrentPlayer((prev) => (prev + 1) % (players.length || 1));
     resetTurn();
   };
 
@@ -78,26 +92,6 @@ function App() {
   const playerScores = usedGoals.map(
     goals => Object.values(goals).reduce((a, b) => a + b, 0)
   );
-
-  // --- Selection screen ---
-  if (!playerCount) {
-    return (
-      <Box sx={{ p: 4, textAlign: 'center' }}>
-        <h2>Select Number of Players</h2>
-        {[2, 3, 4].map(num => (
-          <Button
-            key={num}
-            variant="contained"
-            color="primary"
-            sx={{ m: 2, minWidth: 100 }}
-            onClick={() => setPlayerCount(num)}
-          >
-            {num} Players
-          </Button>
-        ))}
-      </Box>
-    );
-  }
 
   return (
     <Box className="App" sx={{ p: 4 }}>
@@ -118,14 +112,14 @@ function App() {
         held={held}
         rolling={rolling}
         rerollsLeft={rerollsLeft}
-        rollDice={rollDice}
-        toggleHold={toggleHold}
-        resetGame={resetTurn}
+        rollDice={() => {/* sendAction({type: 'rollDice'}) */}}
+        toggleHold={(idx) => {/* sendAction({type: 'toggleHold', idx}) */}}
+        resetGame={() => {/* sendAction({type: 'resetTurn'}) */}}
       />
       <Goals
         dice={dice}
         usedGoals={usedGoals[currentPlayer] || {}}
-        onApproveRoll={handleApproveRoll}
+        onApproveRoll={(goal, score) => {/* sendAction({type: 'approveRoll', goal, score}) */}}
         canApprove={canApprove && rerollsLeft < maxRerolls}
         playerColor={playerColors[currentPlayer]}
         playerName={playerNames[currentPlayer]}
@@ -140,55 +134,7 @@ function App() {
           </span>
         ))}
       </Box>
-
-      {/* Diced Score Table */}
-      <Box sx={{ mt: 4, overflowX: 'auto' }}>
-        <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 500 }}>
-          <thead>
-            <tr>
-              <th style={{ border: '1px solid #ccc', padding: 8, background: '#f5f5f5' }}>Goal</th>
-              {playerNames.slice(0, playerCount).map((name, idx) => (
-                <th
-                  key={name}
-                  style={{
-                    border: '1px solid #ccc',
-                    padding: 8,
-                    color: playerColors[idx],
-                    background: '#f5f5f5'
-                  }}
-                >
-                  {name}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {[
-              'Ones', 'Twos', 'Threes', 'Fours', 'Fives', 'Sixes',
-              'Three of a Kind', 'Four of a Kind', 'Full House',
-              'Small Straight', 'Large Straight', 'Five of a Kind', 'Chance'
-            ].map(goal => ( 
-              <tr key={goal}>
-                <td style={{ border: '1px solid #ccc', padding: 8 }}>{goal}</td>
-                {usedGoals.slice(0, playerCount).map((goals, idx) => (
-                  <td
-                    key={idx}
-                    style={{
-                      border: '1px solid #ccc',
-                      padding: 8,
-                      textAlign: 'center',
-                      color: playerColors[idx],
-                      background: goals[goal] !== undefined ? '#e8f5e9' : '#fff'
-                    }}
-                  >
-                    {goals[goal] !== undefined ? goals[goal] : ''}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </Box>
+      {/* Score Table ... */}
     </Box>
   );
 }
