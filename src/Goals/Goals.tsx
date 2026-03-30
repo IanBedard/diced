@@ -22,9 +22,9 @@ function calculateScore(goal: string, dice: number[]): number {
     case 'Fours': return dice.filter(d => d === 4).length * 4;
     case 'Fives': return dice.filter(d => d === 5).length * 5;
     case 'Sixes': return dice.filter(d => d === 6).length * 6;
-    case '3 of a Kind':
+    case 'Three of a Kind':
       return dice.some(val => dice.filter(d => d === val).length >= 3) ? dice.reduce((a, b) => a + b, 0) : 0;
-    case '4 of a Kind':
+    case 'Four of a Kind':
       return dice.some(val => dice.filter(d => d === val).length >= 4) ? dice.reduce((a, b) => a + b, 0) : 0;
     case 'Full House':
       const counts = dice.reduce((acc, val) => { acc[val] = (acc[val] || 0) + 1; return acc; }, {} as Record<number, number>);
