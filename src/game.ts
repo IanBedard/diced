@@ -14,10 +14,24 @@ export type Category =
   | 'Chance';
 
 export interface Player {
-  id: number;
+  id: number | string;
   name: string;
   color: string;
   scores: Partial<Record<Category, number>>;
+  connected?: boolean;
+}
+
+export interface GameState {
+  roomCode: string;
+  maxPlayers: number;
+  players: Player[];
+  currentPlayer: number;
+  dice: number[];
+  held: boolean[];
+  rerollsLeft: number;
+  canScore: boolean;
+  started: boolean;
+  hostId: string;
 }
 
 export const categories: Category[] = [

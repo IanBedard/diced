@@ -67,7 +67,9 @@
 .room-panel,
 .turn-panel,
 .goals-panel,
-.winner-panel {
+.winner-panel,
+.online-setup,
+.waiting-panel {
   border: 1px solid rgba(20, 33, 61, 0.12);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.84);
@@ -103,6 +105,23 @@
   gap: 16px;
   width: min(900px, 100%);
   margin: -40px auto 28px;
+}
+
+.online-setup {
+  display: grid;
+  grid-template-columns: 0.85fr 1fr 1.2fr;
+  gap: 18px;
+  align-items: end;
+  width: min(980px, 100%);
+  margin: -40px auto 24px;
+  padding: 22px;
+}
+
+.error-text {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #b42318;
+  font-weight: 700;
 }
 
 .player-option {
@@ -308,6 +327,19 @@
   text-align: center;
 }
 
+.waiting-panel {
+  width: min(760px, 100%);
+  margin: 0 auto 24px;
+  padding: 24px;
+  text-align: center;
+}
+
+.waiting-panel h2 {
+  margin: 8px 0;
+  font-size: 2.4rem;
+  letter-spacing: 0.08em;
+}
+
 @media (max-width: 860px) {
   .app-shell {
     padding: 20px;
@@ -322,11 +354,13 @@
   .setup-grid,
   .rules-strip,
   .score-summary,
-  .play-grid {
+  .play-grid,
+  .online-setup {
     grid-template-columns: 1fr;
   }
 
-  .setup-grid {
+  .setup-grid,
+  .online-setup {
     margin-top: 0;
   }
 }

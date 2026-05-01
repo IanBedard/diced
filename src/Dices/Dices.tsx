@@ -14,6 +14,7 @@ interface DicesProps {
   rollDice: () => void;
   toggleHold: (idx: number) => void;
   resetTurn: () => void;
+  disabled?: boolean;
 }
 
 const maxRerolls = 3;
@@ -40,6 +41,7 @@ const Dices: React.FC<DicesProps> = ({
   rollDice,
   toggleHold,
   resetTurn,
+  disabled = false,
 }) => {
   const canHold = rerollsLeft < maxRerolls;
   const letterDice = ['D', 'I', 'C', 'E', 'D'];
@@ -59,7 +61,7 @@ const Dices: React.FC<DicesProps> = ({
             animate={rolling && !held[idx] ? 'rolling' : 'initial'}
             transition={{ duration: 0.6, ease: 'easeInOut' }}
             onClick={() => {
-              if (!rolling && canHold) toggleHold(idx);
+              if (!disabled && !rolling && canHold) toggleHold(idx);
             }}
             title={
               rerollsLeft === maxRerolls
@@ -79,7 +81,7 @@ const Dices: React.FC<DicesProps> = ({
           color="primary"
           startIcon={<CasinoIcon />}
           onClick={rollDice}
-          disabled={rolling || rerollsLeft === 0}
+          disabled={disabled || rolling || rerollsLeft === 0}
           fullWidth
         >
           {rolling
@@ -95,7 +97,7 @@ const Dices: React.FC<DicesProps> = ({
           color="inherit"
           startIcon={<RestartAltIcon />}
           onClick={resetTurn}
-          disabled={rolling}
+          disabled={disabled || rolling}
           fullWidth
         >
           Reset Turn
