@@ -28,6 +28,7 @@ const initialDice = [1, 1, 1, 1, 1];
 const initialHeld = [false, false, false, false, false];
 const maxRerolls = 3;
 const apiUrl = process.env.REACT_APP_GAME_API_URL || '/api/game';
+const playerStorageKey = 'diced-player-id';
 
 type PlayMode = 'lobby' | 'local' | 'online';
 
@@ -43,7 +44,9 @@ function App() {
   const [roomCode, setRoomCode] = useState('');
   const [playerName, setPlayerName] = useState('Player');
   const [joinCode, setJoinCode] = useState('');
-  const [onlinePlayerId, setOnlinePlayerId] = useState('');
+  const [onlinePlayerId, setOnlinePlayerId] = useState(
+    () => window.localStorage.getItem(playerStorageKey) || ''
+  );
   const [syncStatus, setSyncStatus] = useState('Netlify ready');
   const [onlineError, setOnlineError] = useState('');
 
@@ -95,7 +98,10 @@ function App() {
       throw new Error(data.error || 'Game sync failed.');
     }
 
-    if (data.playerId) setOnlinePlayerId(data.playerId);
+    if (data.playerId) {
+      setOnlinePlayerId(data.playerId);
+      window.localStorage.setItem(playerStorageKey, data.playerId);
+    }
     if (data.room) {
       syncOnlineGame(data.room);
       setMode('online');
@@ -218,6 +224,7 @@ function App() {
     setCurrentPlayer(0);
     setRoomCode('');
     setOnlinePlayerId('');
+    window.localStorage.removeItem(playerStorageKey);
     setOnlineError('');
     resetTurn();
   };

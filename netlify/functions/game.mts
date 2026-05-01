@@ -186,7 +186,7 @@ async function joinRoom(store: ReturnType<typeof getStore>, body: any) {
   const room = await getRoom(store, normalizeRoomCode(body.roomCode));
   if (room.players.length >= room.maxPlayers) throw new Error('That room is full.');
 
-  const existing = room.players.find(player => player.name === sanitizeName(body.playerName, ''));
+  const existing = room.players.find(player => player.id === body.playerId);
   if (existing) return { room, playerId: existing.id };
 
   const index = room.players.length;
