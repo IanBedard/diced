@@ -1,38 +1,332 @@
-.App {
+.app-shell {
+  min-height: 100vh;
+  padding: 32px;
+  color: #14213d;
+}
+
+.lobby {
+  background:
+    radial-gradient(circle at top left, rgba(47, 128, 237, 0.18), transparent 34%),
+    linear-gradient(135deg, #fbfbff 0%, #edf6f9 46%, #fff7ed 100%);
+}
+
+.game-board {
+  background: #f6f8fb;
+}
+
+.hero,
+.topbar,
+.score-summary,
+.play-grid,
+.rules-strip {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+}
+
+.hero,
+.topbar {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+}
+
+.hero {
+  min-height: 52vh;
+  align-items: center;
+}
+
+.topbar {
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.hero h1,
+.topbar h1,
+.winner-panel h2 {
+  margin: 10px 0;
+  font-size: clamp(3rem, 8vw, 6.75rem);
+  line-height: 0.94;
+}
+
+.topbar h1 {
+  font-size: 2.5rem;
+}
+
+.hero p {
+  max-width: 640px;
+  font-size: 1.2rem;
+  line-height: 1.6;
+}
+
+.status-chip {
+  background: #ffffff !important;
+  border: 1px solid rgba(20, 33, 61, 0.12) !important;
+}
+
+.room-panel,
+.turn-panel,
+.goals-panel,
+.winner-panel {
+  border: 1px solid rgba(20, 33, 61, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: 0 24px 80px rgba(20, 33, 61, 0.08);
+}
+
+.room-panel {
+  min-width: 260px;
+  padding: 28px;
+}
+
+.room-panel span,
+.room-panel small,
+.eyebrow {
+  display: block;
+  color: #667085;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.room-panel strong {
+  display: block;
+  margin: 10px 0;
+  font-size: 2.1rem;
+  letter-spacing: 0.08em;
+}
+
+.setup-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  width: min(900px, 100%);
+  margin: -40px auto 28px;
+}
+
+.player-option {
+  min-height: 132px;
+  border: 1px solid rgba(20, 33, 61, 0.12);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #14213d;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  padding: 22px;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.player-option:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 20px 50px rgba(20, 33, 61, 0.12);
+}
+
+.player-option svg,
+.player-option span,
+.player-option small {
+  display: block;
+}
+
+.player-option span {
+  margin: 12px 0 4px;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.player-option small {
+  color: #667085;
+}
+
+.rules-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.rules-strip span {
+  padding: 14px;
+  border-left: 4px solid #2f80ed;
+  background: rgba(255, 255, 255, 0.72);
+  font-weight: 700;
+}
+
+.score-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.score-card {
+  padding: 16px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.score-card.active {
+  box-shadow: 0 16px 40px rgba(20, 33, 61, 0.12);
+}
+
+.score-card span,
+.score-card small {
+  display: block;
+}
+
+.score-card span {
+  font-weight: 800;
+}
+
+.score-card strong {
+  display: block;
+  margin: 6px 0;
+  font-size: 2rem;
+}
+
+.score-card small {
+  color: #667085;
+}
+
+.turn-progress {
+  width: min(1180px, 100%);
+  margin: 18px auto 24px;
+  border-radius: 999px;
+}
+
+.play-grid {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.92fr) minmax(380px, 1.08fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.turn-panel,
+.goals-panel,
+.winner-panel {
+  padding: 24px;
+}
+
+.turn-panel h2,
+.panel-heading h2 {
+  margin: 4px 0 0;
+}
+
+.dice-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  margin: 28px 0;
+}
+
+.dice {
+  width: 72px;
+  height: 72px;
+  border: 2px solid #14213d;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: inset 0 -8px 0 rgba(20, 33, 61, 0.06), 0 10px 24px rgba(20, 33, 61, 0.12);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 900;
+  user-select: none;
+}
+
+.dice.held {
+  border-color: #219653;
+  background: #e8f6ee;
+}
+
+.goal-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.goal-row {
+  display: grid;
+  grid-template-columns: 1fr 76px;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid rgba(20, 33, 61, 0.1);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.goal-row strong,
+.goal-row small {
+  display: block;
+}
+
+.goal-row small {
+  margin-top: 3px;
+  color: #667085;
+}
+
+.goal-row.used {
+  background: #f0f7f3;
+}
+
+.score-table-wrap {
+  width: min(1180px, 100%);
+  margin: 24px auto 0;
+  overflow-x: auto;
+}
+
+.score-table {
+  width: 100%;
+  min-width: 620px;
+  border-collapse: collapse;
+  background: #ffffff;
+}
+
+.score-table th,
+.score-table td {
+  padding: 12px;
+  border-bottom: 1px solid #e5e7eb;
   text-align: center;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.score-table th:first-child,
+.score-table td:first-child {
+  text-align: left;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
+.score-table .filled {
+  background: #f0f7f3;
+  font-weight: 800;
+}
+
+.winner-panel {
+  width: min(760px, 100%);
+  margin: 36px auto;
+  text-align: center;
+}
+
+@media (max-width: 860px) {
+  .app-shell {
+    padding: 20px;
   }
-}
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
-}
-
-.App-link {
-  color: #61dafb;
-}
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
+  .hero,
+  .topbar {
+    align-items: stretch;
+    flex-direction: column;
   }
-  to {
-    transform: rotate(360deg);
+
+  .setup-grid,
+  .rules-strip,
+  .score-summary,
+  .play-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .setup-grid {
+    margin-top: 0;
   }
 }

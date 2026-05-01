@@ -1,55 +1,53 @@
-import React, { useState } from 'react';
-import Dices from './Dices/Dices';
-import Goals from './Goals/Goals';
+import React, { useMemo, useState } from 'react';
+import CasinoIcon from '@mui/icons-material/Casino';
+import GroupsIcon from '@mui/icons-material/Groups';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
+import LinearProgress from '@mui/material/LinearProgress';
+import Stack from '@mui/material/Stack';
+import Dices from './Dices/Dices';
+import Goals from './Goals/Goals';
+import {
+  Category,
+  Player,
+  buildPlayers,
+  categories,
+  isPlayerComplete,
+  playerTotal,
+  totalScore,
+} from './game';
 import './App.css';
 
 const initialDice = [1, 1, 1, 1, 1];
 const initialHeld = [false, false, false, false, false];
 const maxRerolls = 3;
-const playerColors = ['red', 'blue', 'green', 'gold'];
-const playerNames = ['Red', 'Blue', 'Green', 'Yellow'];
+const roomCode = 'DICE-5821';
 
 function App() {
-  const [playerCount, setPlayerCount] = useState<number | null>(null);
+  const [players, setPlayers] = useState<Player[]>([]);
   const [currentPlayer, setCurrentPlayer] = useState(0);
   const [dice, setDice] = useState(initialDice);
   const [held, setHeld] = useState(initialHeld);
   const [rolling, setRolling] = useState(false);
   const [rerollsLeft, setRerollsLeft] = useState(maxRerolls);
-  const [usedGoals, setUsedGoals] = useState<Array<{ [goal: string]: number }>>([]);
   const [canApprove, setCanApprove] = useState(false);
 
-  // Initialize usedGoals for each player after selection
-  React.useEffect(() => {
-    if (playerCount) {
-      setUsedGoals(Array(playerCount).fill(null).map(() => ({})));
-      setCurrentPlayer(0);
-      setDice(initialDice);
-      setHeld(initialHeld);
-      setRerollsLeft(maxRerolls);
-      setCanApprove(false);
-    }
-  }, [playerCount]);
+  const activePlayer = players[currentPlayer];
+  const completedTurns = players.reduce(
+    (sum, player) => sum + Object.keys(player.scores).length,
+    0
+  );
+  const totalTurns = players.length * categories.length || 1;
+  const gameComplete = players.length > 0 && players.every(isPlayerComplete);
+  const leaders = useMemo(() => {
+    if (players.length === 0) return [];
+    const highScore = Math.max(...players.map(playerTotal));
+    return players.filter(player => playerTotal(player) === highScore);
+  }, [players]);
 
-  const getRandomFace = () => Math.floor(Math.random() * 6) + 1; 
-
-  const rollDice = () => {
-    if (rolling || rerollsLeft === 0) return;
-    setRolling(true);
-    setTimeout(() => {
-      setDice(dice.map((face, idx) => (held[idx] ? face : getRandomFace())));
-      setRerollsLeft(rerollsLeft - 1);
-      setRolling(false);
-      setCanApprove(true);
-    }, 600);
-  };
-
-  const toggleHold = (idx: number) => {
-    if (rolling || rerollsLeft === maxRerolls) return;
-    setHeld(held => held.map((h, i) => (i === idx ? !h : h)));
-  };
+  const getRandomFace = () => Math.floor(Math.random() * 6) + 1;
 
   const resetTurn = () => {
     setDice(initialDice);
@@ -58,163 +56,188 @@ function App() {
     setCanApprove(false);
   };
 
-  const handleApproveRoll = (goal: string, score: number) => {
-    setUsedGoals(prev => {
-      const updated = [...prev];
-      updated[currentPlayer] = { ...updated[currentPlayer], [goal]: score };
-      return updated;
-    });
-    // Next player's turn
-    setCurrentPlayer((prev) => (prev + 1) % (playerCount || 1));
+  const startGame = (playerCount: number) => {
+    setPlayers(buildPlayers(playerCount));
+    setCurrentPlayer(0);
     resetTurn();
   };
 
-  // Calculate turn number for each player (number of goals they've filled + 1)
-  const playerTurnNumber = usedGoals[currentPlayer]
-    ? Object.keys(usedGoals[currentPlayer]).length + 1
-    : 1;
+  const rollDice = () => {
+    if (rolling || rerollsLeft === 0) return;
+    setRolling(true);
+    setTimeout(() => {
+      setDice(currentDice =>
+        currentDice.map((face, idx) => (held[idx] ? face : getRandomFace()))
+      );
+      setRerollsLeft(current => current - 1);
+      setRolling(false);
+      setCanApprove(true);
+    }, 600);
+  };
 
-  // Calculate total score for each player
-  const playerScores = usedGoals.map(
-    goals => Object.values(goals).reduce((a, b) => a + b, 0)
-  );
+  const toggleHold = (idx: number) => {
+    if (rolling || rerollsLeft === maxRerolls) return;
+    setHeld(currentHeld => currentHeld.map((isHeld, i) => (i === idx ? !isHeld : isHeld)));
+  };
 
-  // --- Instruction screen ---
-  if (!playerCount) {
+  const handleApproveRoll = (category: Category, score: number) => {
+    setPlayers(prev => {
+      const updated = prev.map(player => ({ ...player, scores: { ...player.scores } }));
+      updated[currentPlayer].scores[category] = score;
+      return updated;
+    });
+    setCurrentPlayer(prev => (prev + 1) % players.length);
+    resetTurn();
+  };
+
+  if (players.length === 0) {
     return (
-      <Box sx={{ p: 4, maxWidth: 600, margin: '0 auto', textAlign: 'center' }}>
-        <h2>How to Play Diced</h2>
-        <Box sx={{ textAlign: 'left', mb: 3, fontSize: 18 }}>
-          <ul>
-            <li>
-              <strong>Roll Dice:</strong> On your turn, click <b>Roll</b> to roll all five dice.
-            </li>
-            <li>
-              <strong>Keep Dice:</strong> Click on any die to <b>hold</b> it (keep its value) for your next roll. Click again to release.
-            </li>
-            <li>
-              <strong>Rerolls:</strong> You can roll up to <b>3 times</b> per turn. After each roll, choose which dice to keep and which to reroll.
-            </li>
-            <li>
-              <strong>Scoring:</strong> After your rolls, select a scoring category (goal) and approve your score. Each category can only be used once per player.
-            </li>
-            <li>
-              <strong>Points:</strong> Your score for each category depends on your dice and the rules for that category (e.g., sum of all Fives, Full House, etc.).
-            </li>
-            <li>
-              <strong>Turn Order:</strong> Players take turns. The game ends when all categories are filled.
-            </li>
-            <li>
-              <strong>Winner:</strong> The player with the highest total score wins!
-            </li>
-          </ul>
-        </Box>
-        <h2>Select Number of Players</h2>
-        {[2, 3, 4].map(num => ( 
-          <Button
-            key={num}
-            variant="contained"
-            color="primary"
-            sx={{ m: 2, minWidth: 100 }}
-            onClick={() => setPlayerCount(num)}
-          >
-            {num} Players
-          </Button>
-        ))}
+      <Box className="app-shell lobby">
+        <header className="hero">
+          <div>
+            <Chip icon={<CasinoIcon />} label="Online game prototype" className="status-chip" />
+            <h1>Diced</h1>
+            <p>
+              A quick five-dice score chase built for pass-and-play today, with a room
+              flow ready for sockets, matchmaking, and shared turns next.
+            </p>
+          </div>
+          <div className="room-panel">
+            <span>Room Code</span>
+            <strong>{roomCode}</strong>
+            <small>Local preview mode</small>
+          </div>
+        </header>
+
+        <section className="setup-grid" aria-label="Start a Diced game">
+          {[2, 3, 4].map(num => (
+            <button className="player-option" key={num} onClick={() => startGame(num)}>
+              <GroupsIcon />
+              <span>{num} Players</span>
+              <small>Start table</small>
+            </button>
+          ))}
+        </section>
+
+        <section className="rules-strip">
+          <span>Roll up to three times</span>
+          <span>Hold dice between rolls</span>
+          <span>Fill every scoring category once</span>
+          <span>Highest total wins</span>
+        </section>
       </Box>
     );
   }
 
   return (
-    <Box className="App" sx={{ p: 4 }}>
-      <Box sx={{ mb: 2, textAlign: 'center' }}>
-        <span
-          style={{
-            color: playerColors[currentPlayer],
-            fontWeight: 'bold',
-            fontSize: 24,
-            letterSpacing: 2,
-          }}
+    <Box className="app-shell game-board">
+      <header className="topbar">
+        <div>
+          <Chip label={`Room ${roomCode}`} className="status-chip" />
+          <h1>Diced</h1>
+        </div>
+        <Button
+          variant="outlined"
+          color="inherit"
+          startIcon={<RestartAltIcon />}
+          onClick={() => setPlayers([])}
         >
-          {playerNames[currentPlayer]} Player's Turn
-        </span>
-      </Box>
-      <Dices
-        dice={dice}
-        held={held}
-        rolling={rolling}
-        rerollsLeft={rerollsLeft}
-        rollDice={rollDice}
-        toggleHold={toggleHold}
-        resetGame={resetTurn}
-      />
-      <Goals
-        dice={dice}
-        usedGoals={usedGoals[currentPlayer] || {}}
-        onApproveRoll={handleApproveRoll}
-        canApprove={canApprove && rerollsLeft < maxRerolls}
-        playerColor={playerColors[currentPlayer]}
-        playerName={playerNames[currentPlayer]}
-      />
-      <Box sx={{ mt: 4, fontSize: 20 }}>
-        <strong>Turn:</strong> {playerTurnNumber} / 13
-      </Box>
-      <Box sx={{ mt: 2, fontSize: 20 }}>
-        {playerScores.map((score, idx) => (
-          <span key={idx} style={{ color: playerColors[idx], marginRight: 16 }}>
-            <strong>{playerNames[idx]}:</strong> {score}
-          </span>
-        ))}
-      </Box>
+          New Game
+        </Button>
+      </header>
 
-      {/* Diced Score Table */}
-      <Box sx={{ mt: 4, overflowX: 'auto' }}>
-        <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 500 }}>
+      <section className="score-summary" aria-label="Player scores">
+        {players.map((player, index) => (
+          <article
+            className={`score-card ${index === currentPlayer && !gameComplete ? 'active' : ''}`}
+            key={player.id}
+            style={{ borderColor: player.color }}
+          >
+            <span style={{ color: player.color }}>{player.name}</span>
+            <strong>{playerTotal(player)}</strong>
+            <small>
+              {Object.keys(player.scores).length} / {categories.length} goals
+            </small>
+          </article>
+        ))}
+      </section>
+
+      <LinearProgress
+        variant="determinate"
+        value={(completedTurns / totalTurns) * 100}
+        className="turn-progress"
+      />
+
+      {gameComplete ? (
+        <section className="winner-panel">
+          <Chip label="Game complete" className="status-chip" />
+          <h2>
+            {leaders.length === 1
+              ? `${leaders[0].name} wins with ${playerTotal(leaders[0])}!`
+              : `Tie game at ${playerTotal(leaders[0])}!`}
+          </h2>
+          <Button variant="contained" startIcon={<RestartAltIcon />} onClick={() => startGame(players.length)}>
+            Play Again
+          </Button>
+        </section>
+      ) : (
+        <main className="play-grid">
+          <section className="turn-panel">
+            <Stack direction="row" justifyContent="space-between" alignItems="center" gap={2}>
+              <div>
+                <span className="eyebrow">Current turn</span>
+                <h2 style={{ color: activePlayer.color }}>{activePlayer.name} Player</h2>
+              </div>
+              <Chip label={`Dice total ${rerollsLeft === maxRerolls ? '-' : totalScore(dice)}`} />
+            </Stack>
+
+            <Dices
+              dice={dice}
+              held={held}
+              rolling={rolling}
+              rerollsLeft={rerollsLeft}
+              rollDice={rollDice}
+              toggleHold={toggleHold}
+              resetTurn={resetTurn}
+            />
+          </section>
+
+          <Goals
+            dice={dice}
+            usedGoals={activePlayer.scores}
+            onApproveRoll={handleApproveRoll}
+            canApprove={canApprove && rerollsLeft < maxRerolls}
+            playerColor={activePlayer.color}
+          />
+        </main>
+      )}
+
+      <section className="score-table-wrap">
+        <table className="score-table">
           <thead>
             <tr>
-              <th style={{ border: '1px solid #ccc', padding: 8, background: '#f5f5f5' }}>Goal</th>
-              {playerNames.slice(0, playerCount).map((name, idx) => (
-                <th
-                  key={name}
-                  style={{
-                    border: '1px solid #ccc',
-                    padding: 8,
-                    color: playerColors[idx],
-                    background: '#f5f5f5'
-                  }}
-                >
-                  {name}
+              <th>Goal</th>
+              {players.map(player => (
+                <th key={player.id} style={{ color: player.color }}>
+                  {player.name}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {[
-              'Ones', 'Twos', 'Threes', 'Fours', 'Fives', 'Sixes',
-              'Three of a Kind', 'Four of a Kind', 'Full House',
-              'Small Straight', 'Large Straight', 'Five of a Kind', 'Chance'
-            ].map(goal => ( 
-              <tr key={goal}>
-                <td style={{ border: '1px solid #ccc', padding: 8 }}>{goal}</td>
-                {usedGoals.slice(0, playerCount).map((goals, idx) => (
-                  <td
-                    key={idx}
-                    style={{
-                      border: '1px solid #ccc',
-                      padding: 8,
-                      textAlign: 'center',
-                      color: playerColors[idx],
-                      background: goals[goal] !== undefined ? '#e8f5e9' : '#fff'
-                    }}
-                  >
-                    {goals[goal] !== undefined ? goals[goal] : ''}
+            {categories.map(category => (
+              <tr key={category}>
+                <td>{category}</td>
+                {players.map(player => (
+                  <td key={player.id} className={player.scores[category] !== undefined ? 'filled' : ''}>
+                    {player.scores[category] ?? ''}
                   </td>
                 ))}
               </tr>
             ))}
           </tbody>
         </table>
-      </Box>
+      </section>
     </Box>
   );
 }

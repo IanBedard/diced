@@ -1,7 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import CasinoIcon from '@mui/icons-material/Casino';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Stack from '@mui/material/Stack';
 
 interface DicesProps {
   dice: number[];
@@ -10,7 +13,7 @@ interface DicesProps {
   rerollsLeft: number;
   rollDice: () => void;
   toggleHold: (idx: number) => void;
-  resetGame: () => void;
+  resetTurn: () => void;
 }
 
 const maxRerolls = 3;
@@ -23,7 +26,7 @@ const diceVariants = {
 const containerVariants = {
   rolling: {
     transition: {
-      staggerChildren: 0.15, 
+      staggerChildren: 0.15,
     },
   },
   initial: {},
@@ -36,83 +39,68 @@ const Dices: React.FC<DicesProps> = ({
   rerollsLeft,
   rollDice,
   toggleHold,
-  resetGame,
+  resetTurn,
 }) => {
   const canHold = rerollsLeft < maxRerolls;
   const letterDice = ['D', 'I', 'C', 'E', 'D'];
 
   return (
-    <Box className="Dices" sx={{ textAlign: 'center', mt: 4 }}>
+    <Box className="Dices">
       <motion.div
         className="dice-container"
         variants={containerVariants}
         animate={rolling ? 'rolling' : 'initial'}
-        style={{ display: 'flex', gap: 16, justifyContent: 'center', marginBottom: 24 }}
       >
         {dice.map((face, idx) => (
           <motion.div
             key={idx}
-            className="dice"
+            className={`dice ${held[idx] ? 'held' : ''}`}
             variants={diceVariants}
             animate={rolling && !held[idx] ? 'rolling' : 'initial'}
             transition={{ duration: 0.6, ease: 'easeInOut' }}
             onClick={() => {
               if (!rolling && canHold) toggleHold(idx);
             }}
-            style={{
-              width: 60,
-              height: 60,
-              background: held[idx] ? '#c8e6c9' : '#fff',
-              border: held[idx] ? '3px solid #388e3c' : '2px solid #333',
-              borderRadius: 8,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 32,
-              fontWeight: 'bold',
-              boxShadow: '2px 2px 8px #aaa',
-              cursor: rolling || !canHold ? 'not-allowed' : 'pointer',
-              userSelect: 'none',
-              opacity: rerollsLeft === maxRerolls ? 0.5 : 1,
-            }}
             title={
               rerollsLeft === maxRerolls
                 ? 'Roll first!'
                 : held[idx]
-                ? 'Click to release'
-                : 'Click to hold'
+                  ? 'Click to release'
+                  : 'Click to hold'
             }
           >
             {rerollsLeft === maxRerolls ? letterDice[idx] : face}
           </motion.div>
         ))}
       </motion.div>
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={rollDice}
-        disabled={rolling || rerollsLeft === 0}
-        sx={{ mr: 2 }}
-      >
-        {rolling
-          ? 'Rolling...'
-          : rerollsLeft === maxRerolls
-            ? 'Roll'
-            : rerollsLeft === 0
-              ? 'No rerolls left'
-              : `Reroll (${rerollsLeft})`}
-      </Button>
-      <Button
-        variant="outlined"
-        color="secondary"
-        onClick={resetGame}
-        disabled={rolling}
-      >
-        Reset
-      </Button>
-      <Box sx={{ mt: 3, fontSize: 24 }}>
-        Sum: {rerollsLeft === maxRerolls ? '-' : dice.reduce((a, b) => a + b, 0)}
-      </Box>
+      <Stack direction={{ xs: 'column', sm: 'row' }} gap={2}>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<CasinoIcon />}
+          onClick={rollDice}
+          disabled={rolling || rerollsLeft === 0}
+          fullWidth
+        >
+          {rolling
+            ? 'Rolling...'
+            : rerollsLeft === maxRerolls
+              ? 'Roll Dice'
+              : rerollsLeft === 0
+                ? 'No rerolls left'
+                : `Reroll (${rerollsLeft} left)`}
+        </Button>
+        <Button
+          variant="outlined"
+          color="inherit"
+          startIcon={<RestartAltIcon />}
+          onClick={resetTurn}
+          disabled={rolling}
+          fullWidth
+        >
+          Reset Turn
+        </Button>
+      </Stack>
     </Box>
   );
 };
