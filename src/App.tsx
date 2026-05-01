@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import CasinoIcon from '@mui/icons-material/Casino';
 import GroupsIcon from '@mui/icons-material/Groups';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
@@ -10,7 +10,6 @@ import Chip from '@mui/material/Chip';
 import LinearProgress from '@mui/material/LinearProgress';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
-import { io, Socket } from 'socket.io-client';
 import Dices from './Dices/Dices';
 import Goals from './Goals/Goals';
 import {
@@ -28,7 +27,7 @@ import './App.css';
 const initialDice = [1, 1, 1, 1, 1];
 const initialHeld = [false, false, false, false, false];
 const maxRerolls = 3;
-const socketUrl = process.env.REACT_APP_SOCKET_URL || '';
+const apiUrl = process.env.REACT_APP_GAME_API_URL || '/api/game';
 
 type PlayMode = 'lobby' | 'local' | 'online';
 
@@ -45,34 +44,8 @@ function App() {
   const [playerName, setPlayerName] = useState('Player');
   const [joinCode, setJoinCode] = useState('');
   const [onlinePlayerId, setOnlinePlayerId] = useState('');
-  const [socket, setSocket] = useState<Socket | null>(null);
-  const [socketStatus, setSocketStatus] = useState(socketUrl ? 'Connecting' : 'Offline');
+  const [syncStatus, setSyncStatus] = useState('Netlify ready');
   const [onlineError, setOnlineError] = useState('');
-
-  useEffect(() => {
-    if (!socketUrl) return;
-
-    const nextSocket = io(socketUrl, {
-      transports: ['websocket'],
-    });
-
-    setSocket(nextSocket);
-    nextSocket.on('connect', () => setSocketStatus('Online'));
-    nextSocket.on('disconnect', () => setSocketStatus('Disconnected'));
-    nextSocket.on('connect_error', () => setSocketStatus('Connection failed'));
-    nextSocket.on('gameError', message => setOnlineError(message));
-    nextSocket.on('roomJoined', ({ roomCode: nextRoomCode, playerId }) => {
-      setRoomCode(nextRoomCode);
-      setOnlinePlayerId(playerId);
-      setMode('online');
-      setOnlineError('');
-    });
-    nextSocket.on('gameState', syncOnlineGame);
-
-    return () => {
-      nextSocket.disconnect();
-    };
-  }, []);
 
   const activePlayer = players[currentPlayer];
   const isOnline = mode === 'online';
@@ -101,11 +74,63 @@ function App() {
     setRolling(false);
   }
 
+  async function callGameApi(action: string, payload: Record<string, unknown> = {}) {
+    setOnlineError('');
+    setSyncStatus('Syncing');
+
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action,
+        roomCode,
+        playerId: onlinePlayerId,
+        ...payload,
+      }),
+    });
+    const data = await response.json();
+
+    if (!response.ok || data.error) {
+      setSyncStatus('Needs attention');
+      throw new Error(data.error || 'Game sync failed.');
+    }
+
+    if (data.playerId) setOnlinePlayerId(data.playerId);
+    if (data.room) {
+      syncOnlineGame(data.room);
+      setMode('online');
+    }
+    setSyncStatus('Synced');
+    return data;
+  }
+
+  const refreshRoom = useCallback(async (nextRoomCode: string) => {
+    try {
+      const response = await fetch(`${apiUrl}?roomCode=${encodeURIComponent(nextRoomCode)}`);
+      const data = await response.json();
+      if (!response.ok || data.error) throw new Error(data.error || 'Refresh failed.');
+      syncOnlineGame(data.room);
+      setSyncStatus('Synced');
+    } catch (error) {
+      setSyncStatus('Disconnected');
+    }
+  }, []);
+
+  useEffect(() => {
+    if (mode !== 'online' || !roomCode) return;
+
+    const interval = window.setInterval(() => {
+      refreshRoom(roomCode);
+    }, 1500);
+
+    return () => window.clearInterval(interval);
+  }, [mode, roomCode, refreshRoom]);
+
   const getRandomFace = () => Math.floor(Math.random() * 6) + 1;
 
   const resetTurn = () => {
     if (isOnline) {
-      socket?.emit('resetTurn');
+      callGameApi('resetTurn').catch(error => setOnlineError(error.message));
       return;
     }
 
@@ -127,21 +152,15 @@ function App() {
   };
 
   const createOnlineRoom = (maxPlayers: number) => {
-    if (!socket || socketStatus !== 'Online') {
-      setOnlineError('Add REACT_APP_SOCKET_URL and start the realtime server first.');
-      return;
-    }
-
-    socket.emit('createRoom', { playerName, maxPlayers });
+    callGameApi('createRoom', { playerName, maxPlayers }).catch(error =>
+      setOnlineError(error.message)
+    );
   };
 
   const joinOnlineRoom = () => {
-    if (!socket || socketStatus !== 'Online') {
-      setOnlineError('Add REACT_APP_SOCKET_URL and start the realtime server first.');
-      return;
-    }
-
-    socket.emit('joinRoom', { roomCode: joinCode, playerName });
+    callGameApi('joinRoom', { roomCode: joinCode, playerName }).catch(error =>
+      setOnlineError(error.message)
+    );
   };
 
   const rollDice = () => {
@@ -149,8 +168,9 @@ function App() {
     setRolling(true);
 
     if (isOnline) {
-      socket?.emit('rollDice');
-      setTimeout(() => setRolling(false), 800);
+      callGameApi('rollDice')
+        .catch(error => setOnlineError(error.message))
+        .finally(() => setRolling(false));
       return;
     }
 
@@ -168,7 +188,7 @@ function App() {
     if (rolling || rerollsLeft === maxRerolls || !canAct) return;
 
     if (isOnline) {
-      socket?.emit('toggleHold', { index: idx });
+      callGameApi('toggleHold', { index: idx }).catch(error => setOnlineError(error.message));
       return;
     }
 
@@ -179,7 +199,7 @@ function App() {
     if (!canAct) return;
 
     if (isOnline) {
-      socket?.emit('scoreCategory', { category });
+      callGameApi('scoreCategory', { category }).catch(error => setOnlineError(error.message));
       return;
     }
 
@@ -204,7 +224,7 @@ function App() {
 
   const restartGame = () => {
     if (isOnline) {
-      socket?.emit('restartGame');
+      callGameApi('restartGame').catch(error => setOnlineError(error.message));
       return;
     }
 
@@ -217,8 +237,8 @@ function App() {
         <header className="hero">
           <div>
             <Chip
-              icon={socketStatus === 'Online' ? <WifiIcon /> : <WifiOffIcon />}
-              label={socketUrl ? socketStatus : 'Local only until backend is deployed'}
+              icon={syncStatus === 'Disconnected' ? <WifiOffIcon /> : <WifiIcon />}
+              label={syncStatus}
               className="status-chip"
             />
             <h1>Diced</h1>
@@ -228,9 +248,9 @@ function App() {
             </p>
           </div>
           <div className="room-panel">
-            <span>Realtime Server</span>
-            <strong>{socketUrl ? 'Ready' : 'Not Set'}</strong>
-            <small>{socketUrl || 'REACT_APP_SOCKET_URL missing'}</small>
+            <span>Netlify Rooms</span>
+            <strong>Ready</strong>
+            <small>{apiUrl}</small>
           </div>
         </header>
 
